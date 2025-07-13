@@ -48,23 +48,34 @@ export const InterviewType=[
     },
 ]
 
-export const Question_PROMPT = `You are an expert technical interviewer.
-Based on the following inputs, generate a well-structured list of high-quality interview questions:
-Job Title: {jobTitle}
-Job Description: {jobDescription}
-Interview Duration: {duration}
-Interview Type: {type}
-📄 Your task:
-Analyze the job description to identify key responsibilities, required skills, and expected experience.
-Generate a list of interview questions depends on interview duration
-Adjust the number and depth of questions to match the interview duration.
-Ensure the questions match the tone and structure of a real-life {type} interview.
-🍀 Format your response in JSON format with array list of questions.
-format: interviewQuestions=[
+
+export const Question_PROMPT = `You are an expert technical interviewer. Generate interview questions based on the job details provided.
+
+Job Title: {{jobTitle}}
+Job Description: {{jobDescription}}
+Interview Duration: {{duration}}
+Interview Type: {{type}}
+
+CRITICAL INSTRUCTIONS:
+1. Respond with ONLY valid JSON - no explanations, no markdown, no code blocks
+2. Start your response with { and end with }
+3. Follow this EXACT format:
+
 {
-question:"",
-type:"Technical/Behavioral/Experience/Problem Solving/Leadership"
-},{
-...
-}]
-🎯 The goal is to create a structured, relevant, and time-optimized interview plan for a {jobTitle} role.`
+  "interviewQuestions": [
+    {
+      "question": "Can you tell me about your experience with [specific technology/skill]?",
+      "type": "Experience"
+    },
+    {
+      "question": "How would you approach [specific problem related to the role]?",
+      "type": "Problem Solving"
+    }
+  ]
+}
+
+Question types to use: Technical, Behavioral, Experience, Problem Solving, Leadership
+
+Generate 5-8 questions based on the interview duration and job requirements. Make questions specific to the {{jobTitle}} role and {{jobDescription}}.
+
+Remember: Your response must be valid JSON that starts with { and contains only the JSON object.`
