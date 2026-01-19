@@ -2,6 +2,7 @@
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "@/services/supabaseClient";
 import { UserDetailContext } from "@/context/UserDetainContext";
+import { Loader2 } from "lucide-react";
 
 function Provider({ children }) {
   const [user, setUser] = useState(null);
