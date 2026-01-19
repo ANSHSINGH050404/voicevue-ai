@@ -38,8 +38,8 @@ const CreateInterview = () => {
 
   const onCreateLink = (interview_id) => {
     setinterviewId(interview_id);
-    setstep(step + 1);
-  }
+    router.push(`/interview/${interview_id}`);
+  };
   return (
     <div className="mt-10 px-10 md:px-24 lg:px-44 xl:px-56">
       <div className="gap-5 flex items-center">

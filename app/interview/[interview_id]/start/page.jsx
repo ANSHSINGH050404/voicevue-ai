@@ -12,8 +12,11 @@ import {
   Users,
   Calendar,
   Briefcase,
+  Loader2,
 } from "lucide-react";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useMemo } from "react";
+import { useParams } from "next/navigation";
+import { supabase } from "@/services/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { InterviewDataContext } from "@/context/InterviewDataContext";
 import Vapi from "@vapi-ai/web";
@@ -25,21 +28,66 @@ const StartInterview = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isCallActive, setIsCallActive] = useState(true);
+  const [connectionState, setConnectionState] = useState("disconnected");
+  const { interview_id } = useParams();
 
   // Mock context usage - replace with actual context
   // const interviewInfo = InterviewDataContext.interviewInfo;
 
   const { interviewInfo, setInterviewInfo } = useContext(InterviewDataContext);
-  const vapi = new Vapi(process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY);
+  const vapi = useMemo(
+    () => new Vapi(process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY),
+    [],
+  );
 
   useEffect(() => {
-    interviewInfo && startCall();
-  }, [interviewInfo]);
+    if (!interviewInfo && interview_id) {
+      fetchInterviewDetails();
+    }
+  }, [interview_id]);
 
+  const fetchInterviewDetails = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("interviews")
+        .select("*")
+        .eq("interview_id", interview_id)
+        .single();
 
+      if (error) throw error;
+      if (data) {
+        setInterviewInfo({
+          ...data,
+          interviewData: data,
+          userName: "Candidate", // Fallback name
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching interview:", err);
+    }
+  };
 
+  useEffect(() => {
+    vapi.on("call-start", () => {
+      console.log("Call started");
+      setConnectionState("connected");
+      setIsRunning(true);
+    });
+    vapi.on("call-end", () => {
+      console.log("Call ended");
+      setConnectionState("disconnected");
+      setIsRunning(false);
+    });
+    vapi.on("speech-start", () => console.log("AI is speaking"));
+    vapi.on("speech-end", () => console.log("AI finished speaking"));
+    vapi.on("error", (e) => {
+      console.error("Vapi Error:", e);
+      setConnectionState("error");
+    });
+    return () => vapi.removeAllListeners();
+  }, [vapi]);
 
-// Timer logic
+  // Timer logic
   useEffect(() => {
     let interval;
     if (isRunning) {
@@ -68,7 +116,6 @@ const StartInterview = () => {
   const toggleMute = () => setIsMuted(!isMuted);
   const toggleVideo = () => setIsVideoOff(!isVideoOff);
   const endCall = () => {
-   
     // In real app: router.push('/interview/feedback')
     alert("Interview ended. Thank you!");
   };
@@ -83,92 +130,70 @@ const StartInterview = () => {
     );
   };
 
-
-
-
-
-
   const startCall = () => {
-    let questionList;
-    interviewInfo?.interviewData?.questionList.forEach(
-      (item, index) => (questionList = item?.question + "," + questionList)
-    );
-    console.log(questionList);
+    if (connectionState === "connected" || connectionState === "connecting")
+      return;
 
+    const questions =
+      (
+        interviewInfo?.questionList ||
+        interviewInfo?.interviewData?.questionList
+      )
+        ?.map((item) => item?.question)
+        .join(", ") || "";
 
-      const assistantOptions = {
-    name: "AI Recruiter",
-    firstMessage:
-      "Hi " +
-      interviewInfo?.userName +
-      ", how are you? Ready for your interview on " +
-      interviewInfo?.interviewData?.jobPosition,
-    transcriber: {
-      provider: "deepgram",
-      model: "nova-2",
-      language: "en-US",
-    },
-    voice: {
-      provider: "playht",
-      voiceId: "jennifer",
-    },
-    model: {
-      provider: "openai",
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content:
-            `You are an AI voice assistant conducting interviews.
-Your job is to ask candidates provided interview questions, assess their responses.
-Begin the conversation with a friendly introduction, setting a relaxed yet professional tone. Example:
-"Hey there! Welcome to your ` +
-            interviewInfo?.interviewData?.jobPosition +
-            ` interview. Let's get started with a few questions!"
+    const assistantOptions = {
+      name: "AI Recruiter",
+      firstMessage: `Hi ${interviewInfo?.userName || "Candidate"}, I'm your AI recruiter. Ready for your ${interviewInfo?.jobPosition || "interview"}?`,
+      transcriber: {
+        provider: "deepgram",
+        model: "nova-2",
+        language: "en-US",
+      },
+      voice: {
+        provider: "11labs",
+        voiceId: "sarah",
+      },
+      model: {
+        provider: "openai",
+        model: "gpt-3.5-turbo",
+        temperature: 0.7,
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert technical interviewer for the position of ${interviewInfo?.jobPosition}.
+Your task is to conduct a professional interview.
+ASK THESE QUESTIONS ONE BY ONE:
+${questions}
 
-Ask one question at a time and wait for the candidate's response before proceeding. Keep the questions clear and concise. Below Are the questions:`+
-            questionList +`
-            
+RULES:
+1. Start with a friendly welcome.
+2. Ask exactly one question at a time.
+3. Wait for the candidate's answer before proceeding.
+4. Provide very brief, encouraging feedback after each answer.
+5. Keep your responses concise to ensure a smooth voice conversation.`,
+          },
+        ],
+      },
+    };
 
-If the candidate struggles, offer hints or rephrase the question without giving away the answer. Example:
-"Need a hint? Think about how React tracks component updates!"
+    console.log("Vapi Assistant Options:", assistantOptions);
 
-Provide brief, encouraging feedback after each answer. Example:
-"Nice! That's a solid answer."
-"Hmm, not quite! Want to try again?"
-
-Keep the conversation natural and engaging—use casual phrases like "Alright, next up..." or "Let's tackle a tricky one!"
-
-After 5-7 questions, wrap up the interview smoothly by summarizing their performance. Example:
-"That was great! You handled some tough questions well. Keep sharpening your skills!"
-
-End on a positive note:
-"Thanks for chatting! Hope to see you crushing projects soon!"
-
-Key Guidelines:
-✅ Be friendly, engaging, and witty
-✅ Keep responses short and natural, like a real conversation
-✅ Adapt based on the candidate's confidence level
-✅ Ensure the interview remains focused on React`.trim(),
-        },
-      ],
-    },
+    try {
+      setConnectionState("connecting");
+      vapi.start(assistantOptions);
+    } catch (err) {
+      console.error("Vapi Start Error:", err);
+      setConnectionState("error");
+    }
   };
-  vapi.start(assistantOptions);
-  };
-
-
-
-  
 
   const stopInterview = () => {
     vapi.stop();
     console.log("Stop Vapiiiiii...");
-     setIsCallActive(false);
+    setIsCallActive(false);
     setIsRunning(false);
-    
   };
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
@@ -229,20 +254,37 @@ Key Guidelines:
                 <h3 className="text-2xl font-bold text-white mb-2">
                   AI Recruiter
                 </h3>
-                <p className="text-blue-200">Conducting your interview</p>
+                <p className="text-blue-200">
+                  {connectionState === "connected"
+                    ? "Listening..."
+                    : connectionState === "connecting"
+                      ? "Connecting..."
+                      : "Ready for Interview"}
+                </p>
+
+                {connectionState === "disconnected" && (
+                  <Button
+                    onClick={startCall}
+                    className="mt-6 bg-white text-blue-600 hover:bg-blue-50 font-bold px-8 py-6 rounded-2xl text-lg shadow-xl"
+                  >
+                    Start AI Interview
+                  </Button>
+                )}
 
                 {/* Speaking indicator */}
-                <div className="flex items-center justify-center gap-1 mt-4">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-                  <div
-                    className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
-                    style={{ animationDelay: "0.2s" }}
-                  />
-                  <div
-                    className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
-                    style={{ animationDelay: "0.4s" }}
-                  />
-                </div>
+                {connectionState === "connected" && (
+                  <div className="flex items-center justify-center gap-1 mt-4">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                    <div
+                      className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
+                      style={{ animationDelay: "0.2s" }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
+                      style={{ animationDelay: "0.4s" }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -250,8 +292,15 @@ Key Guidelines:
               <div className="flex items-center justify-between">
                 <span className="text-white font-medium">AI Recruiter</span>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="text-sm text-green-400">Connected</span>
+                  <div
+                    className={`w-2 h-2 rounded-full ${connectionState === "connected" ? "bg-green-400" : "bg-gray-400"}`}
+                  />
+                  <span
+                    className={`text-sm ${connectionState === "connected" ? "text-green-400" : "text-gray-400"}`}
+                  >
+                    {connectionState.charAt(0).toUpperCase() +
+                      connectionState.slice(1)}
+                  </span>
                 </div>
               </div>
             </div>
