@@ -1,18 +1,17 @@
-import React from 'react'
-import DashboardProvider from './provider'
+import React from "react";
+import DashboardProvider from "./provider";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import Header from "@/components/Header";
 
-const DashboardLayout = ({children}) => {
+const DashboardLayout = ({ children }) => {
   return (
-    <div>
-        <DashboardProvider>
-          <div className='p-10'>
-   {children}
-          </div>
-  
-        </DashboardProvider>
-   
-    </div>
-  )
-}
+    <ProtectedRoute>
+      <DashboardProvider>
+        <Header />
+        <div className="p-10">{children}</div>
+      </DashboardProvider>
+    </ProtectedRoute>
+  );
+};
 
-export default DashboardLayout
+export default DashboardLayout;

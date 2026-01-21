@@ -3,11 +3,22 @@
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/services/supabaseClient";
 import Image from "next/image";
-import React from "react";
+import React, { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/app/provider";
 
 const page = () => {
   const [isLoading, setIsLoading] = React.useState(false);
+  const router = useRouter();
+  const { user } = useUser();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard");
+    }
+  }, [user, router]);
 
   const signWithGoogle = async () => {
     try {
