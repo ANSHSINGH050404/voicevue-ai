@@ -1,17 +1,25 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import React, { useEffect, useState } from "react";
-import { Loader2, Sparkles, Lock, Mail, User as UserIcon } from "lucide-react";
+import {
+  Loader2,
+  Sparkles,
+  Lock,
+  Mail,
+  User as UserIcon,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/provider";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -29,6 +37,14 @@ const AuthPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -178,23 +194,31 @@ const AuthPage = () => {
             onSubmit={handleSubmit}
             className="space-y-4"
           >
-            {!isLogin && (
-              <motion.div variants={itemVariants}>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <UserIcon className="w-4 h-4 inline mr-2" />
-                  Name
-                </label>
-                <Input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="John Doe"
-                  required={!isLogin}
-                  className="w-full bg-gray-900/50 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/50"
-                />
-              </motion.div>
-            )}
+            <AnimatePresence mode="popLayout">
+              {!isLogin && (
+                <motion.div
+                  key="name-field"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <UserIcon className="w-4 h-4 inline mr-2" />
+                    Name
+                  </label>
+                  <Input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="John Doe"
+                    required={!isLogin}
+                    className="w-full bg-gray-900/50 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/50"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <motion.div variants={itemVariants}>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -217,15 +241,28 @@ const AuthPage = () => {
                 <Lock className="w-4 h-4 inline mr-2" />
                 Password
               </label>
-              <Input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                required
-                className="w-full bg-gray-900/50 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/50"
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  className="w-full bg-gray-900/50 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/50 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
             </motion.div>
 
             <motion.div variants={itemVariants}>
