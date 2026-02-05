@@ -1,18 +1,16 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import React from "react";
 import { AppSidebar } from "./_components/Sidebar";
-import WelcomeContainer from "./_components/WelcomeContainer";
 
 const DashboardProvider = ({ children }) => {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <div className="w-full">
-        {/* <SidebarTrigger/> */}
-        <WelcomeContainer/>
-        {children}
-        
-      </div>
+      <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );
 };

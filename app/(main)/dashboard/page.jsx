@@ -1,19 +1,17 @@
-import React from 'react'
+import React from "react";
 
-import CreateOption from '../_components/CreateOption'
-import LatestInterviewList from '../_components/LatestInterviewList'
+import CreateOption from "../_components/CreateOption";
+import LatestInterviewList from "../_components/LatestInterviewList";
+import WelcomeContainer from "../_components/WelcomeContainer";
 
 const page = () => {
   return (
-    <div>
-     
-      <h2 className='font-bold text-2xl py-3'>Dashboard</h2>
-      <CreateOption/>
-
-      <LatestInterviewList/>
-
+    <div className=" float-right ">
+      <WelcomeContainer />
+      <CreateOption />
+      <LatestInterviewList />
     </div>
-  )
-}
+  );
+};
 
-export default page
+export default page;

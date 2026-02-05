@@ -2,12 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Image from "next/image";
 import React, { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles, Lock, Mail, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/provider";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -65,71 +65,123 @@ const AuthPage = () => {
     });
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+      },
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-72 h-72 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-gradient-to-br from-indigo-400/20 to-pink-400/20 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4 overflow-hidden">
+      {/* Animated background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute -bottom-40 -left-40 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl"
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.5, 0.3, 0.5],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       </div>
 
       {/* Main auth container */}
-      <div className="relative w-full max-w-md">
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl shadow-blue-500/10 p-8 border border-white/20">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="relative w-full max-w-md z-10"
+      >
+        <motion.div
+          variants={itemVariants}
+          className="bg-gray-800/50 backdrop-blur-xl rounded-3xl shadow-2xl shadow-purple-500/20 p-8 border border-white/10"
+        >
           {/* Logo/Brand section */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              VoiceVue-AI
+          <motion.div variants={itemVariants} className="text-center mb-8">
+            <motion.div
+              className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/50"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Sparkles className="w-8 h-8 text-white" />
+            </motion.div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              VoiceVue AI
             </h1>
-            <p className="text-gray-600 mt-2 text-sm">
-              Intelligent voice analytics platform
+            <p className="text-gray-400 mt-2 text-sm">
+              Your AI-powered interview coach
             </p>
-          </div>
+          </motion.div>
 
           {/* Toggle between Login and Register */}
-          <div className="flex gap-2 mb-6 bg-gray-100 p-1 rounded-lg">
+          <motion.div
+            variants={itemVariants}
+            className="flex gap-2 mb-6 bg-gray-900/50 p-1 rounded-xl border border-white/5"
+          >
             <button
               onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2 rounded-md transition-all ${
+              className={`flex-1 py-3 rounded-lg transition-all font-medium ${
                 isLogin
-                  ? "bg-white shadow-sm text-blue-600 font-medium"
-                  : "text-gray-600"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
               Login
             </button>
             <button
               onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2 rounded-md transition-all ${
+              className={`flex-1 py-3 rounded-lg transition-all font-medium ${
                 !isLogin
-                  ? "bg-white shadow-sm text-blue-600 font-medium"
-                  : "text-gray-600"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
               Register
             </button>
-          </div>
+          </motion.div>
 
           {/* Auth Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <motion.form
+            variants={containerVariants}
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
             {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <motion.div variants={itemVariants}>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <UserIcon className="w-4 h-4 inline mr-2" />
                   Name
                 </label>
                 <Input
@@ -139,13 +191,14 @@ const AuthPage = () => {
                   onChange={handleChange}
                   placeholder="John Doe"
                   required={!isLogin}
-                  className="w-full"
+                  className="w-full bg-gray-900/50 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/50"
                 />
-              </div>
+              </motion.div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <motion.div variants={itemVariants}>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Mail className="w-4 h-4 inline mr-2" />
                 Email
               </label>
               <Input
@@ -155,12 +208,13 @@ const AuthPage = () => {
                 onChange={handleChange}
                 placeholder="you@example.com"
                 required
-                className="w-full"
+                className="w-full bg-gray-900/50 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/50"
               />
-            </div>
+            </motion.div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <motion.div variants={itemVariants}>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Lock className="w-4 h-4 inline mr-2" />
                 Password
               </label>
               <Input
@@ -170,47 +224,73 @@ const AuthPage = () => {
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
-                className="w-full"
+                className="w-full bg-gray-900/50 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/50"
               />
-            </div>
+            </motion.div>
 
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200"
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>
-                    {isLogin ? "Signing in..." : "Creating account..."}
-                  </span>
-                </div>
-              ) : (
-                <span>{isLogin ? "Sign In" : "Create Account"}</span>
-              )}
-            </Button>
-          </form>
+            <motion.div variants={itemVariants}>
+              <motion.button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-medium shadow-lg shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                whileTap={{ scale: isLoading ? 1 : 0.98 }}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>
+                      {isLogin ? "Signing in..." : "Creating account..."}
+                    </span>
+                  </div>
+                ) : (
+                  <span>{isLogin ? "Sign In" : "Create Account"}</span>
+                )}
+              </motion.button>
+            </motion.div>
+          </motion.form>
 
           {/* Footer */}
-          <div className="mt-6 text-center">
+          <motion.div variants={itemVariants} className="mt-6 text-center">
             <p className="text-xs text-gray-500">
               By continuing, you agree to our{" "}
-              <span className="text-blue-600 hover:underline cursor-pointer">
+              <span className="text-purple-400 hover:text-purple-300 cursor-pointer">
                 Terms of Service
               </span>{" "}
               and{" "}
-              <span className="text-blue-600 hover:underline cursor-pointer">
+              <span className="text-purple-400 hover:text-purple-300 cursor-pointer">
                 Privacy Policy
               </span>
             </p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        {/* Additional decorative elements */}
-        <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full opacity-60 animate-pulse"></div>
-        <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full opacity-60 animate-pulse delay-1000"></div>
-      </div>
+        {/* Decorative elements */}
+        <motion.div
+          className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full opacity-60"
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full opacity-60"
+          animate={{
+            scale: [1.2, 1, 1.2],
+            rotate: [360, 180, 0],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </motion.div>
     </div>
   );
 };
