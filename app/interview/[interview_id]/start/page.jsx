@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useContext, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from "@/services/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { InterviewDataContext } from "@/context/InterviewDataContext";
 import Vapi from "@vapi-ai/web";
@@ -48,17 +47,17 @@ const StartInterview = () => {
 
   const fetchInterviewDetails = async () => {
     try {
-      const { data, error } = await supabase
-        .from("interviews")
-        .select("*")
-        .eq("interview_id", interview_id)
-        .single();
+      const response = await fetch(`/api/interviews/${interview_id}`);
+      const data = await response.json();
 
-      if (error) throw error;
-      if (data) {
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch interview");
+      }
+
+      if (data.interview) {
         setInterviewInfo({
-          ...data,
-          interviewData: data,
+          ...data.interview,
+          interviewData: data.interview,
           userName: "Candidate", // Fallback name
         });
       }

@@ -3,12 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/provider";
-import { supabase } from "@/services/supabaseClient";
 import { LogOut, User, Settings, ChevronDown } from "lucide-react";
 import Image from "next/image";
 
 export default function Header() {
-  const { user, setUser } = useUser();
+  const { user, setUser, logout } = useUser();
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -26,17 +25,8 @@ export default function Header() {
   }, []);
 
   const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Error signing out:", error);
-        return;
-      }
-      setUser(null);
-      router.push("/");
-    } catch (err) {
-      console.error("Unexpected error during sign-out:", err);
-    }
+    await logout();
+    router.push("/");
   };
 
   if (!user) return null;
@@ -78,25 +68,15 @@ export default function Header() {
             >
               {/* User Avatar */}
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center overflow-hidden">
-                {user.picture ? (
-                  <Image
-                    src={user.picture}
-                    alt={user.name || "User"}
-                    width={32}
-                    height={32}
-                    className="object-cover"
-                  />
-                ) : (
-                  <User className="w-5 h-5 text-white" />
-                )}
+                <User className="w-5 h-5 text-white" />
               </div>
 
               {/* User Name */}
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-900">
-                  {user.name || user.email}
+                  {user.name || "Guest User"}
                 </p>
-                <p className="text-xs text-gray-500">{user.email}</p>
+                <p className="text-xs text-gray-500">Guest Access</p>
               </div>
 
               {/* Dropdown Icon */}
@@ -113,9 +93,9 @@ export default function Header() {
                 {/* User Info */}
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-semibold text-gray-900">
-                    {user.name || "User"}
+                    {user.name || "Guest User"}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                  <p className="text-xs text-gray-500 mt-1">Guest Mode</p>
                 </div>
 
                 {/* Menu Items */}

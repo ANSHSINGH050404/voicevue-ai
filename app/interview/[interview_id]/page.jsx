@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InterviewDataContext } from "@/context/InterviewDataContext";
-import { supabase } from "@/services/supabaseClient";
 import {
   Info,
   Video,
@@ -26,10 +25,11 @@ const Interview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [joining, setJoining] = useState(false);
-  
+
   const { interview_id } = useParams();
   const router = useRouter();
-  const { interviewInfo,setInterviewInfo } = useContext(InterviewDataContext) || {};
+  const { interviewInfo, setInterviewInfo } =
+    useContext(InterviewDataContext) || {};
 
   useEffect(() => {
     if (interview_id) {
@@ -41,28 +41,26 @@ const Interview = () => {
     try {
       setLoading(true);
       setError("");
-      
-      const { data: interviews, error } = await supabase
-        .from("interviews")
-        .select("jobPosition,jobDescription,duration,type")
-        .eq("interview_id", interview_id);
 
-      if (error) {
-        console.error("Supabase error:", error);
-        setError("Failed to load interview details");
+      // Fetch from MongoDB API
+      const response = await fetch(`/api/interviews/${interview_id}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to load interview details");
         return;
       }
 
-      if (!interviews || interviews.length === 0) {
+      if (!data.interview) {
         setError("Interview not found");
         return;
       }
 
-      setInterviewData(interviews[0]);
-      
+      setInterviewData(data.interview);
+
       // Update context if available
       if (setInterviewInfo) {
-        setInterviewInfo(interviews[0]);
+        setInterviewInfo(data.interview);
       }
     } catch (err) {
       console.error("Error fetching interview:", err);
@@ -74,24 +72,21 @@ const Interview = () => {
 
   const onJoinInterview = async () => {
     if (!name.trim()) return;
-    
+
     try {
       setJoining(true);
       setError("");
 
-      // Get full interview data
-      const { data: interviews, error } = await supabase
-        .from("interviews")
-        .select("*")
-        .eq("interview_id", interview_id);
+      // Get full interview data from MongoDB API
+      const response = await fetch(`/api/interviews/${interview_id}`);
+      const data = await response.json();
 
-      if (error) {
-        console.error("Error joining interview:", error);
-        setError("Failed to join interview. Please try again.");
+      if (!response.ok) {
+        setError(data.error || "Failed to join interview. Please try again.");
         return;
       }
 
-      if (!interviews || interviews.length === 0) {
+      if (!data.interview) {
         setError("Interview not found");
         return;
       }
@@ -99,9 +94,9 @@ const Interview = () => {
       // Store user name in context or localStorage
       if (setInterviewInfo) {
         setInterviewInfo({
-          ...interviews[0],
-          userName:name,
-          interviewData:interviews[0],
+          ...data.interview,
+          userName: name,
+          interviewData: data.interview,
         });
       }
 

@@ -5,9 +5,9 @@ import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import FormContainer from "./_components/FormContainer";
-import OuestionList from "./_components/OuestionList";
+import QuestionList from "./_components/QuestionList";
 import { toast } from "sonner";
-import InterviewLink from "./_components/Interview€Link";
+import InterviewLink from "./_components/InterviewLink";
 
 const CreateInterview = () => {
   const router = useRouter();
@@ -53,7 +53,7 @@ const CreateInterview = () => {
           GoToNext={() => onGoToNext()}
         />
       ) : step == 2 ? (
-        <OuestionList
+        <QuestionList
           formData={formData}
           onCreateLink={(interview_id) => onCreateLink(interview_id)}
         />

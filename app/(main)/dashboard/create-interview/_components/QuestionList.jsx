@@ -1,13 +1,12 @@
 import { useUser } from "@/app/provider";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/services/supabaseClient";
 import axios from "axios";
 import { Loader2Icon } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { v4 } from "uuid";
 
-const QuestionList = ({ formData,onCreateLink }) => {
+const QuestionList = ({ formData, onCreateLink }) => {
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -23,45 +22,57 @@ const QuestionList = ({ formData,onCreateLink }) => {
   const extractQuestionsManually = (text) => {
     const questions = [];
     console.log("Starting manual extraction from:", text.substring(0, 200));
-    
+
     // Split by lines and clean up
-    const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line);
-    
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line);
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
+
       // Look for different question patterns
       const patterns = [
-        /^\d+\.\s*(.+)$/,  // 1. Question text
-        /^Q\d+[:\.]?\s*(.+)$/,  // Q1: Question text
-        /^Question\s*\d*[:\.]?\s*(.+)$/i,  // Question: text
-        /^-\s*(.+)$/,  // - Question text
-        /^\*\s*(.+)$/,  // * Question text
+        /^\d+\.\s*(.+)$/, // 1. Question text
+        /^Q\d+[:.]?\s*(.+)$/, // Q1: Question text
+        /^Question\s*\d*[:.]?\s*(.+)$/i, // Question: text
+        /^-\s*(.+)$/, // - Question text
+        /^\*\s*(.+)$/, // * Question text
       ];
-      
+
       for (const pattern of patterns) {
         const match = line.match(pattern);
         if (match) {
           const questionText = match[1].trim();
-          if (questionText && questionText.length > 10 && questionText.endsWith('?')) {
+          if (
+            questionText &&
+            questionText.length > 10 &&
+            questionText.endsWith("?")
+          ) {
             questions.push({
               question: questionText,
-              type: "General"
+              type: "General",
             });
             break;
           }
         }
       }
-      
+
       // Also look for lines that just contain questions (end with ?)
-      if (line.endsWith('?') && line.length > 15 && !line.includes('JSON') && !line.includes('format')) {
+      if (
+        line.endsWith("?") &&
+        line.length > 15 &&
+        !line.includes("JSON") &&
+        !line.includes("format")
+      ) {
         questions.push({
           question: line,
-          type: "General"
+          type: "General",
         });
       }
     }
-    
+
     console.log(`Manual extraction found ${questions.length} questions`);
     return questions;
   };
@@ -72,36 +83,43 @@ const QuestionList = ({ formData,onCreateLink }) => {
       const result = await axios.post("/api/ai-model", {
         ...formData,
       });
-      
+
       console.log("API Response:", result.data);
-      
+
       // Parse the AI response to extract questions
       const responseContent = result.data.content;
       console.log("Raw AI Response:", responseContent);
-      
+
       let parsedQuestions = [];
-      
+
       // Clean the response content
       const cleanedContent = responseContent.trim();
-      
+
       // Log the first 200 characters to see what we're getting
-      console.log("First 200 chars of response:", cleanedContent.substring(0, 200));
-      
+      console.log(
+        "First 200 chars of response:",
+        cleanedContent.substring(0, 200),
+      );
+
       try {
         // Method 1: Try direct JSON parse first (only if it looks like JSON)
-        if (cleanedContent.startsWith('{') || cleanedContent.startsWith('[')) {
+        if (cleanedContent.startsWith("{") || cleanedContent.startsWith("[")) {
           try {
             const parsed = JSON.parse(cleanedContent);
-            parsedQuestions = parsed.interviewQuestions || (Array.isArray(parsed) ? parsed : []);
+            parsedQuestions =
+              parsed.interviewQuestions ||
+              (Array.isArray(parsed) ? parsed : []);
             console.log("Direct JSON parse successful");
           } catch (directParseError) {
             console.log("Direct JSON parse failed:", directParseError.message);
           }
         }
-        
+
         // Method 2: Look for JSON object with interviewQuestions property
         if (!parsedQuestions.length) {
-          const jsonObjectMatch = cleanedContent.match(/\{[\s\S]*?"interviewQuestions"[\s\S]*?\}/);
+          const jsonObjectMatch = cleanedContent.match(
+            /\{[\s\S]*?"interviewQuestions"[\s\S]*?\}/,
+          );
           if (jsonObjectMatch) {
             try {
               const parsed = JSON.parse(jsonObjectMatch[0]);
@@ -112,10 +130,12 @@ const QuestionList = ({ formData,onCreateLink }) => {
             }
           }
         }
-        
+
         // Method 3: Look for just the array part [{"question":...}]
         if (!parsedQuestions.length) {
-          const arrayMatch = cleanedContent.match(/\[\s*\{[\s\S]*?"question"[\s\S]*?\}\s*\]/);
+          const arrayMatch = cleanedContent.match(
+            /\[\s*\{[\s\S]*?"question"[\s\S]*?\}\s*\]/,
+          );
           if (arrayMatch) {
             try {
               parsedQuestions = JSON.parse(arrayMatch[0]);
@@ -125,61 +145,72 @@ const QuestionList = ({ formData,onCreateLink }) => {
             }
           }
         }
-        
+
         // Method 4: Look for interviewQuestions array assignment
         if (!parsedQuestions.length) {
-          const jsonArrayMatch = cleanedContent.match(/interviewQuestions\s*=\s*(\[[\s\S]*?\])/);
+          const jsonArrayMatch = cleanedContent.match(
+            /interviewQuestions\s*=\s*(\[[\s\S]*?\])/,
+          );
           if (jsonArrayMatch) {
             try {
               parsedQuestions = JSON.parse(jsonArrayMatch[1]);
               console.log("Array assignment match successful");
             } catch (assignParseError) {
-              console.log("Array assignment parse failed:", assignParseError.message);
+              console.log(
+                "Array assignment parse failed:",
+                assignParseError.message,
+              );
             }
           }
         }
-        
+
         // Method 5: Look for code blocks with JSON
         if (!parsedQuestions.length) {
-          const codeBlockMatch = cleanedContent.match(/```(?:json)?\s*(\{[\s\S]*?\}|\[[\s\S]*?\])\s*```/);
+          const codeBlockMatch = cleanedContent.match(
+            /```(?:json)?\s*(\{[\s\S]*?\}|\[[\s\S]*?\])\s*```/,
+          );
           if (codeBlockMatch) {
             try {
               const parsed = JSON.parse(codeBlockMatch[1]);
-              parsedQuestions = parsed.interviewQuestions || (Array.isArray(parsed) ? parsed : []);
+              parsedQuestions =
+                parsed.interviewQuestions ||
+                (Array.isArray(parsed) ? parsed : []);
               console.log("Code block match successful");
             } catch (codeParseError) {
               console.log("Code block parse failed:", codeParseError.message);
             }
           }
         }
-        
       } catch (parseError) {
         console.error("Error parsing questions:", parseError);
         console.error("Response content:", responseContent);
       }
-      
+
       // If all JSON parsing methods fail, try manual extraction
       if (!parsedQuestions.length) {
-        console.log("All JSON parsing methods failed, trying manual extraction");
+        console.log(
+          "All JSON parsing methods failed, trying manual extraction",
+        );
         parsedQuestions = extractQuestionsManually(responseContent);
       }
-      
+
       // Validate questions format
       if (Array.isArray(parsedQuestions) && parsedQuestions.length > 0) {
         // Ensure each question has required properties
         const validQuestions = parsedQuestions.map((q, index) => ({
           question: q.question || q.text || `Question ${index + 1}`,
-          type: q.type || "General"
+          type: q.type || "General",
         }));
-        
+
         setQuestions(validQuestions);
-        toast.success(`Generated ${validQuestions.length} interview questions!`);
+        toast.success(
+          `Generated ${validQuestions.length} interview questions!`,
+        );
       } else {
         throw new Error("No valid questions found in response");
       }
-      
+
       setLoading(false);
-      
     } catch (e) {
       console.error("API Error:", e);
       toast.error("Server error, Try Again!");
@@ -187,60 +218,75 @@ const QuestionList = ({ formData,onCreateLink }) => {
     }
   };
 
- const onFinish = async () => {
-  console.log("=== DEBUGGING SAVE PROCESS ===");
-  
-  if (!user?.email) {
-    toast.error("Please login to save the interview");
-    return;
-  }
+  const onFinish = async () => {
+    console.log("=== DEBUGGING SAVE PROCESS ===");
 
-  if (questions.length === 0) {
-    toast.error("No questions to save");
-    return;
-  }
-
-  setSaving(true);
-  let interview_id; // Declare outside try block
-  
-  try {
-    interview_id = v4();
-    console.log("Generated interview ID:", interview_id);
-    
-    const insertData = {
-      ...formData,
-      questionList: questions,
-      userEmail: user.email,
-      interview_id: interview_id,
-      created_at: new Date().toISOString()
-    };
-
-    console.log("Inserting data...");
-    
-    // Remove the complex timeout logic, use simple insert
-    const { data, error } = await supabase
-      .from("interviews")
-      .insert([insertData])
-      .select();
-
-    if (error) {
-      console.error("Insert error:", error);
-      throw new Error(`Database error: ${error.message}`);
+    if (!user?.email) {
+      toast.error("Please login to save the interview");
+      return;
     }
 
-    console.log("Interview saved successfully:", data);
-    toast.success("Interview questions saved successfully!");
-    
-    // Call the callback with the interview ID
-    onCreateLink(interview_id);
-    
-  } catch (err) {
-    console.error("Error saving interview:", err);
-    toast.error(err.message || "Failed to save interview. Please try again.");
-  } finally {
-    setSaving(false);
-  }
-};
+    if (questions.length === 0) {
+      toast.error("No questions to save");
+      return;
+    }
+
+    setSaving(true);
+    let interview_id; // Declare outside try block
+
+    try {
+      interview_id = v4();
+      console.log("Generated interview_id:", interview_id);
+
+      const insertData = {
+        ...formData,
+        questionList: questions,
+        interview_id: interview_id,
+      };
+
+      console.log("Saving to MongoDB...");
+      console.log("Insert data:", insertData);
+      console.log("User:", user);
+
+      // Call MongoDB API instead of Supabase
+      const response = await fetch("/api/interviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(insertData),
+        credentials: "include", // Include auth cookie
+      });
+
+      console.log("Response status:", response.status);
+      const data = await response.json();
+      console.log("Response data:", data);
+
+      if (!response.ok) {
+        // Show detailed error message
+        let errorMsg = "Failed to save interview";
+
+        if (data.details && Array.isArray(data.details)) {
+          errorMsg = `Validation Error: ${data.details.map((d) => `${d.field}: ${d.message}`).join(", ")}`;
+        } else if (data.error) {
+          errorMsg = data.error;
+        }
+
+        console.error("API Error:", errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      console.log("Interview saved successfully:", data);
+      toast.success("Interview questions saved successfully!");
+
+      // Call the callback with the interview ID
+      onCreateLink(interview_id);
+    } catch (err) {
+      console.error("Error saving interview:", err);
+      console.error("Error details:", err.message);
+      toast.error(err.message || "Failed to save interview. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -260,7 +306,7 @@ const QuestionList = ({ formData,onCreateLink }) => {
           </div>
         </div>
       )}
-      
+
       {!loading && questions.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">
@@ -279,10 +325,10 @@ const QuestionList = ({ formData,onCreateLink }) => {
               </div>
             ))}
           </div>
-          
+
           <div className="flex justify-end mt-6">
-            <Button 
-              onClick={onFinish} 
+            <Button
+              onClick={onFinish}
               disabled={saving}
               className="flex items-center gap-2"
             >
@@ -292,14 +338,14 @@ const QuestionList = ({ formData,onCreateLink }) => {
           </div>
         </div>
       )}
-      
+
       {!loading && questions.length === 0 && (
         <div className="p-5 rounded-2xl border bg-yellow-50 border-yellow-200">
           <p className="text-yellow-800">
             No questions generated. Please try again.
           </p>
-          <Button 
-            onClick={GenerateQuestionList} 
+          <Button
+            onClick={GenerateQuestionList}
             className="mt-3"
             variant="outline"
           >

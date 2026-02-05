@@ -208,15 +208,9 @@ export default function Home() {
               </button>
               <button
                 onClick={() => router.push("/auth")}
-                className="text-gray-700 hover:text-gray-900 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                Log In
-              </button>
-              <button
-                onClick={() => router.push("/auth")}
                 className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-2 rounded-lg font-medium hover:from-teal-600 hover:to-teal-700 shadow-md hover:shadow-lg transition-all"
               >
-                Sign Up Free
+                Get Started
               </button>
             </div>
           </div>
