@@ -1,44 +1,39 @@
 import { Question_PROMPT } from "@/Constant/dashbord";
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(req) {
   try {
     // Fixed: Added () after req.json
     const { jobPosition, jobDescription, duration, type } = await req.json();
-    
-    const FINAL_PROMT = Question_PROMPT
-      .replace('{{jobTitle}}', jobPosition)
-      .replace('{{jobDescription}}', jobDescription)
-      .replace('{{duration}}', duration)
-      .replace('{{type}}', type);
-    
-    console.log(FINAL_PROMT);
-    
-    const openai = new OpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: process.env.OPENROUTER_API_KEY,
+
+    const FINAL_PROMT = Question_PROMPT.replace("{{jobTitle}}", jobPosition)
+      .replace("{{jobDescription}}", jobDescription)
+      .replace("{{duration}}", duration)
+      .replace("{{type}}", type);
+
+    console.log("Prompt:", FINAL_PROMT);
+
+    // Initialize Google Gemini AI
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Generate content using Gemini
+    const result = await model.generateContent(FINAL_PROMT);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log("Gemini Response:", text);
+
+    return NextResponse.json({
+      role: "assistant",
+      content: text,
     });
-    
-    const completion = await openai.chat.completions.create({
-      model: "google/gemma-3-4b-it:free",
-      messages: [
-        {
-          role: "user",
-          content: FINAL_PROMT,
-        },
-      ],
-      
-    });
-    
-    console.log(completion.choices[0].message);
-    return NextResponse.json(completion.choices[0].message);
-    
   } catch (e) {
     console.error("Error generating interview questions:", e);
     return NextResponse.json(
       { error: "Failed to generate interview questions", details: e.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
